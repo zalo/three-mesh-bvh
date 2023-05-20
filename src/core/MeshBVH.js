@@ -143,7 +143,7 @@ export class MeshBVH {
 			verbose: true,
 			useSharedArrayBuffer: false,
 			setBoundingBox: true,
-			indirectBuffer: false,
+			indirectIndex: false,
 			onProgress: null,
 
 			// undocumented options
