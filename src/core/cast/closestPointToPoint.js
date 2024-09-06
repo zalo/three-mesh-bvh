@@ -2,6 +2,7 @@ import { Vector3 } from 'three';
 
 const temp = /* @__PURE__ */ new Vector3();
 const temp1 = /* @__PURE__ */ new Vector3();
+const temp2 = /* @__PURE__ */ new Vector3();
 
 export function closestPointToPoint(
 	bvh,
@@ -19,6 +20,7 @@ export function closestPointToPoint(
 	const maxThresholdSq = maxThreshold * maxThreshold;
 	let closestDistanceSq = Infinity;
 	let closestDistanceTriIndex = null;
+	let largestOrthogonality = 0.0;
 	bvh.shapecast(
 
 		{
@@ -38,6 +40,8 @@ export function closestPointToPoint(
 
 			intersectsTriangle: ( tri, triIndex ) => {
 
+				if ( tri.needsUpdate ) { tri.update();}
+
 				tri.closestPointToPoint( point, temp );
 				const distSq = point.distanceToSquared( temp );
 				if ( distSq < closestDistanceSq ) {
@@ -45,6 +49,19 @@ export function closestPointToPoint(
 					temp1.copy( temp );
 					closestDistanceSq = distSq;
 					closestDistanceTriIndex = triIndex;
+					largestOrthogonality = tri.satAxes[ 0 ].dot( temp2.subVectors( point, temp1 ).normalize() );
+
+				} else if ( Math.abs( distSq - closestDistanceSq ) < 0.00001 ) {
+
+					let orthogonality = tri.satAxes[ 0 ].dot( temp2.subVectors( point, temp ).normalize() );
+
+					if ( Math.abs( orthogonality ) > Math.abs( largestOrthogonality ) ) {
+
+						temp1.copy( temp );
+						closestDistanceTriIndex = triIndex;
+						largestOrthogonality = orthogonality;
+
+					}
 
 				}
 
@@ -70,7 +87,8 @@ export function closestPointToPoint(
 
 	if ( ! target.point ) target.point = temp1.clone();
 	else target.point.copy( temp1 );
-	target.distance = closestDistance,
+	target.distance = closestDistance;
+	target.signedDistance = closestDistance * Math.sign( largestOrthogonality );
 	target.faceIndex = closestDistanceTriIndex;
 
 	return target;

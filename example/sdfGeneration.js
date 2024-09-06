@@ -262,14 +262,10 @@ function updateSDF() {
 					).applyMatrix4( matrix );
 
 					const index = x + y * dim + z * dim * dim;
-					const dist = bvh.closestPointToPoint( point, target ).distance;
-
-					// get the face normal to determine if the distance should be positive or negative
-					normal.copy( getTriangleHitPointInfo( target.point, geometry, target.faceIndex, triangleTarget ).normal );
-					delta.subVectors( target.point, point );
+					const dist = bvh.closestPointToPoint( point, target ).signedDistance;
 
 					// set the distance in the texture data
-					sdfTex.image.data[ index ] = normal.dot( delta ) > 0.0 ? - dist : dist;
+					sdfTex.image.data[ index ] = dist;
 
 				}
 
