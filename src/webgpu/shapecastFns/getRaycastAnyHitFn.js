@@ -1,14 +1,15 @@
 /** @import { BVHComputeData } from '../BVHComputeData.js' */
 import { float } from 'three/tsl';
 import { wgslTagFn } from '../nodes/WGSLTagFnNode.js';
-import { rayStruct, bvhNodeBoundsStruct } from '../tsl/structs.js';
+import { rayStruct, bvhNodeBoundsStruct, bvhNodeStruct } from '../tsl/structs.js';
 import { intersectRayTriangle } from '../tsl/fns.js';
 import { NOT_INTERSECTED, STOP_TRAVERSAL } from '../../core/Constants.js';
 import { rayBoundsDistance } from './rayShapecastUtils.js';
 
 /**
  * Builds the `raycastAnyHit` shapecast function: returns whether the ray hits any triangle, ending
- * the traversal at the first hit found.
+ * the traversal at the first hit found. The nearer child is visited first, as in `raycastFirstHit`,
+ * so that a hit close to the ray origin ends the traversal before the farther nodes are visited.
  *
  * @private
  * @param {BVHComputeData} bvhData
@@ -25,6 +26,13 @@ export function getRaycastAnyHitFn( bvhData ) {
 		name: 'bvh_RaycastAnyHit',
 		shapeStruct: rayStruct,
 
+		boundsOrderFn: wgslTagFn/* wgsl */`
+			fn getBoundsOrderAnyHit( ray: ${ rayStruct }, splitAxis: u32, node: ${ bvhNodeStruct } ) -> bool {
+
+				return ray.direction[ splitAxis ] >= 0.0;
+
+			}
+		`,
 		intersectsBoundsFn: wgslTagFn/* wgsl */`
 			fn rayIntersectsBoundsAnyHit( ray: ${ rayStruct }, bounds: ${ bvhNodeBoundsStruct } ) -> u32 {
 
